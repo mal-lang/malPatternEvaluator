@@ -3,7 +3,7 @@ A CLI tool to evaluate structural patterns derived from the MITRE ATT&CK framewo
 The pattern collection consists of 25 different patterns capable of identifying specific components in a model where structural defenses can be applied. In total 14 unique structural defenses are proposed that can alter the available attack paths generated in an attack graph.
 
 ## Installment
-1. git clone https://github.com/JensEk/malPatternEvaluator.git
+1. git clone https://github.com/mal-lang/malPatternEvaluator
 2. pip install -r requirements.txt
 3. Install Neo4j Desktop:
    - https://neo4j.com/docs/desktop-manual/current/
