@@ -1,0 +1,629 @@
+{
+    "remoteAccessMFA": {
+        "badDescription": "Identifies [Credentials] linked to [Application] with name matching of remote access where association {ConditionalAuthentication} is missing.",
+        "impact": "Missing Multi-Factor Authentication (MFA) on a remote access service may enable successful authentication by brute force attacks or login with compromised credentials.",
+        "mitigationDescription": "Add [Credentials] with {ConditionalAuthentication} to the identified [Credentials] where MFA is missing.",
+        "badPattern": [
+            "MATCH (app:Application) WHERE app.name =~ '(?i).*VPN.*|.*RDP.*|.*Remote Access.*|.*Remote Service.*|.*Remote Desktop.*|.*Remote.*|.*RMM.*|.*SSH.*'",
+            "WITH app",
+            "MATCH (app)--(usr:Identity)--(cred:Credentials)",
+            "WHERE NOT ANY(factor IN [(cred)<-[:requiredFactors]-(mfa:Credentials) | mfa.name] WHERE factor =~ '(?i).*MFA.*|.*2FA.*|.*Multi-Factor.*|.*Two-Factor.*')",
+            "RETURN DISTINCT cred.name;",
+            "MATCH (app:Application) WHERE app.name =~ '(?i).*VPN.*|.*RDP.*|.*Remote Access.*|.*Remote Service.*|.*Remote Desktop.*|.*Remote.*|.*RMM.*|.*SSH.*'",
+            "WITH app",
+            "MATCH (app)<-[:hostApp]-(:Application)--(usr:Identity)--(cred:Credentials)",
+            "WHERE NOT ANY(factor IN [(cred)<-[:requiredFactors]-(mfa:Credentials) | mfa.name] WHERE factor =~ '(?i).*MFA.*|.*2FA.*|.*Multi-Factor.*|.*Two-Factor.*')",
+            "RETURN DISTINCT cred.name;"
+        ],
+        "mitigationPattern": [
+            "MATCH (cred:Credentials) WHERE cred.name = '$1'",
+            "WITH cred",
+            "CREATE (cred2:Credentials {metaconcept: 'Credentials', name: 'MFA'}), (cred)-[:credentials]->(cred2), (cred2)-[:requiredFactors]->(cred)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1133", "T1078"],
+                    "Persistence": ["T1078"],
+                    "Credential Access": ["T1110"]
+                },
+                "Mitigations": ["M1036", "M1032", "M1030", "M1017"]
+            }
+    },
+    "highPrivAccountsMFA": {
+        "badDescription": "Identifies [Credentials] linked to a [User] associated [Identity] with extended privileges where association {ConditionalAuthentication} is missing.",
+        "impact": "Missing Multi-Factor Authentication (MFA) on accounts with high privileges may enable lateral movements and unauthorized access to resources.",
+        "mitigationDescription": "Add [Credentials] with {ConditionalAuthentication} to the identified [Credentials] where MFA is missing.",
+        "badPattern": [
+            "MATCH (:User)--(id:Identity)-[:highPrivAppIAMs|executionPrivIAMs|writingIAMs|deletingIAMs]->(),(id)--(cred:Credentials)",
+            "WHERE NOT (cred)<-[:requiredFactors]-()",
+            "RETURN DISTINCT cred.name;"
+        ], 
+        "mitigationPattern": [
+            "MATCH (cred:Credentials) WHERE cred.name = '$1'",
+            "WITH cred",
+            "CREATE (cred2:Credentials {metaconcept: 'Credentials', name: 'MFA'}), (cred)-[:credentials]->(cred2), (cred2)-[:requiredFactors]->(cred)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Privilege Escalation": ["T1078"],
+                    "Defense Evasion": ["T1078"],
+                    "Credential Access": ["T1110"]
+                },
+                "Mitigations": ["M1032","M1027","M1026"]
+            }
+    },
+    "unencryptedData": {
+        "badDescription": "Identifies [Data] linked to an [Application] where associated {encryptCreds} are missing.",
+        "impact": "Sensitive data (e.g., credentials, keys, tokens) stored in plaintext without encryption may be susceptible to unauthorized access and compromise.",
+        "mitigationDescription": "Add [Credentials] with {EncryptionCredentials} to the identified [Data] where encryption is missing.",
+        "badPattern": [
+            "MATCH (data:Data)-[:containedData]->(:Application)",
+            "WHERE data.name =~ '(?i).*Secret.*|.*Sensitive.*|.*Key.*|.*Password.*|.*Credential.*|.*Token.*|.*Certificate.*|.*Ticket.*|.*Cookie.*' AND NOT (data)-[:encryptedData]->(:Credentials)",
+            "RETURN DISTINCT data.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (data:Data) WHERE data.name = '$1'",
+            "WITH data",
+            "CREATE (cred:Credentials {metaconcept: 'Credentials', name: 'EncryptKey'}), (cred)<-[:encryptedData]-(data), (cred)-[:encryptCreds]->(data)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Credential Access": ["T1552", "T1555"],
+                    "Collection": ["T1005", "T1039"],
+                    "Impact": ["T1565"]
+                },
+                "Mitigations": ["M1041", "M1047", "M1027", "M1057"]
+            }
+    },
+    "unencryptedInfo": {
+        "badDescription": "Identifies [Information] contained in [Data] where associated {encryptCreds} are missing.",
+        "impact": "Sensitive information (e.g., credentials, keys, tokens) stored in plaintext without encryption may be susceptible to unauthorized access and compromise.",
+        "mitigationDescription": "Add [Credentials] with {EncryptionCredentials} to the identified [Data] where encryption is missing.",
+        "badPattern": [
+            "MATCH (info:Information)<-[:containerData]-(data:Data)",
+            "WHERE info.name =~ '(?i).*Secret.*|.*Sensitive.*|.*Key.*|.*Password.*|.*Credential.*|.*Token.*|.*Certificate.*|.*Ticket.*|.*Cookie.*' AND NOT (data)-[:encryptedData]->(:Credentials)",
+            "RETURN DISTINCT data.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (data:Data) WHERE data.name = '$1'",
+            "WITH data",
+            "CREATE (cred:Credentials {metaconcept: 'Credentials', name: 'EncryptionKey'}), (cred)<-[:encryptedData]-(data), (cred)-[:encryptCreds]->(data)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Credential Access": ["T1552", "T1555"],
+                    "Collection": ["T1005", "T1039"],
+                    "Impact": ["T1565"]
+                },
+                "Mitigations": ["M1041", "M1047", "M1027", "M1057"]
+            }
+    },
+    "shadowAdmins": {
+        "badDescription": "Identifies [User] associated [Identity] with {highPrivAppIAMs} association to [Application] where name is not matching admin/root.",
+        "impact": "User accounts that have inadvertently been assigned admin privilege may enable attackers to control accounts with unrestricted access and movement.",
+        "mitigationDescription": "Remove {highPrivAppIAMs} from the identified [Identity] and add {lowPrivAppIAMs} instead.",
+        "badPattern": [
+            "MATCH (:User)--(acc:Identity)-[:highPrivAppIAMs]->(app:Application)",
+            "WHERE NOT acc.name =~ '(?i).*Admin.*|.*Root.*|.*Superuser.*'",
+            "RETURN DISTINCT acc.name, app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (acc:Identity)-[r1:highPrivAppIAMs]->(app:Application),(acc:Identity)<-[r2:highPrivApps]-(app:Application)",
+            "WHERE acc.name = '$1' AND app.name = '$2'",
+            "DELETE r1,r2",
+            "CREATE (acc)-[:lowPrivAppIAMs]->(app), (acc)<-[:lowPrivApps]-(app)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1078"],
+                    "Privilege Escalation": ["T1078"]
+                    
+                },
+                "Mitigations": ["M1032", "M1018", "M1026", "M1036"]
+            }
+    },
+    "highPrivServiceAccounts": {
+        "badDescription": "Identifies [Identity] with name matching of service account with {highPrivAppIAMs} association.",
+        "impact": "Existence of service, support or any other non user accounts with high privileges may facilitate lateral movement and privilege escalation.",
+        "mitigationDescription": "Remove [Identity] from [Network] and add it to new segmented [Network].",
+        "badPattern": [
+            "MATCH (acc:Identity)-[:highPrivAppIAMs]->(:Application)-->(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE acc.name =~ '(?i).*Service.*|.*Support.*'",
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);",
+            "MATCH (acc:Identity)-[:highPrivAppIAMs]->(:Application)<-[:hostApp]-(:Application)-->(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE acc.name =~ '(?i).*Service.*|.*Support.*'",
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);"
+        ],    
+        "mitigationPattern": [
+            "MATCH (cr:ConnectionRule {name: '$1'})-[r1]->(net:Network {name: '$2'}), (cr)<-[r2]-(net), (fw:RoutingFirewall {name: '$3'})",
+            "DELETE r1,r2",
+            "CREATE (net2:Network {metaconcept: 'Network', name: 'Net segmentedNetwork'}), (cr)-[:$4]->(net2), (cr)<-[:$5]-(net2), (cr2:ConnectionRule {metaconcept: 'ConnectionRule', name: 'CR Net_segmentedNetwork->$3'}), (net2)-[:$6]->(cr2), (net2)<-[:$7]-(cr2), (cr2)-[:connectionRules]->(fw), (cr2)<-[:routingFirewalls]-(fw)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Privilege Escalation": ["T1078"],
+                    "Discovery": ["T1087"],
+                    "Lateral Movement": ["T1072", "T1021"]
+                },
+                "Mitigations": ["M1027","M1036","M1035","M1030","M1033"]
+            }
+    },
+    "userExposedNetworks": {
+        "badDescription": "Identifies [Network] where [User] exists but [IDPS] or other [Application] matching a security tool is missing.",
+        "impact": "Networks without any security tool may faciliate user targeted attack such as phising to deliver malicious attachments or links which are not detected and blocked.",
+        "mitigationDescription": "Add [IDPS] between the [RoutingFirewall] and [Network] where [User] exists.",
+        "badPattern": [
+            "MATCH (:RoutingFirewall)-->(cr:ConnectionRule)-[r1]->(net:Network)-->(:ConnectionRule)-->(app:Application), (cr)<-[r2]-(net)",
+            "WHERE NOT app.name =~ '(?i).*Antivirus.*|.*IPS.*|.*IDS.*|.*EDR.*' AND NOT (net)-[*1..]->(:IDPS) AND (net)-[*1..]->(:User)",
+            "RETURN DISTINCT cr.name, net.name, type(r1), type(r2);"
+        ],
+        "mitigationPattern": [
+            "MATCH (cr:ConnectionRule {name: '$1'})-[r1]->(net:Network {name: '$2'}), (cr)<-[r2]-(net)",
+            "DELETE r1,r2",
+            "CREATE (idps:IDPS {metaconcept: 'IDPS', name: 'IDPS'}), (cr2:ConnectionRule {metaconcept: 'ConnectionRule', name: 'CR IDPS<->$2'}), (cr2)-[:$3]->(net), (cr2)<-[:$4]-(net), (cr2)-[:appConnections]->(idps), (cr2)<-[:applications]-(idps),(cr)-[:appConnections]->(idps), (cr)<-[:applications]-(idps) ;"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1566"],
+                    "Execution": ["T1204"],
+                    "Lateral Movement": ["T1534"]
+                },
+                "Mitigations": ["M1049", "M1031", "M1017"]
+            }
+    },   
+    "exploitVulnerablePublicApp": {
+        "badDescription": "Identifies [Application] linked to a [SoftwareVulnerability] with association {ingoingAppConnections} to a [Network] not identified as DMZ.",
+        "impact": "Application with known vulnerabilities accessible from the internet may be exploited by attackers to gain unauthorized access to the network and resources.",
+        "mitigationDescription": "Remove [ConnectionRule] from [Application] to the [Network], then assign it to a new segmented [Network].",
+        "badPattern": [
+            "MATCH (net:Network)-[r1]->(cr:ConnectionRule)-[:ingoingAppConnections|appConnections]->(:Application)<-[:vulnerabilities]-(sw:SoftwareVulnerability), (net)<-[r2]-(cr), (net)-[r3]->(cr2:ConnectionRule)--(:RoutingFirewall), (net)<-[r4]-(cr2)",
+            "WHERE NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'",
+            "RETURN DISTINCT net.name, cr.name, type(r1), type(r2), type(r3), type(r4);",
+            "MATCH (net:Network)-->(cr:ConnectionRule)-[:ingoingAppConnections|appConnections]->(:Application)-[:hostApp]->(:Application)<-[:vulnerabilities]-(sw:SoftwareVulnerability), (net)<-[r2]-(cr), (net)-[r3]->(cr2:ConnectionRule)--(:RoutingFirewall), (net)<-[r4]-(cr2)",
+            "WHERE NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'",
+            "RETURN DISTINCT net.name, cr.name, type(r1), type(r2), type(r3), type(r4);"
+        ],    
+        "mitigationPattern": [
+            "MATCH (net:Network {name: '$1'})<-[r1]-(cr:ConnectionRule {name: '$2'}), (net)-[r2]->(cr), (net)--(:ConnectionRule)--(fw:RoutingFirewall)", 
+            "DELETE r1,r2",
+            "CREATE (net2:Network {metaconcept: 'Network', name: 'Net segmentedNetwork'}), (net2)-[:$3]->(cr), (net2)<-[:$4]-(cr), (cr2:ConnectionRule {metaconcept: 'ConnectionRule', name: 'CR Net_segmentedNetwork'}), (net2)-[:$5]->(cr2), (net2)<-[:$6]-(cr2), (cr2)-[:connectionRules]->(fw), (cr2)<-[:routingFirewalls]-(fw)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1190"]
+                },
+                "Mitigations": ["M1030", "M1051", "M1016"]
+            }
+    },
+    "exploitVulnerableApp": {
+        "badDescription": "Identifies [SoftwareVulnerability] linked to an [Application] or [SoftwareProduct] with associated [Identity].",
+        "impact": "Applications with known vulnerabilities may be exploited by attackers to elevate privileges or to bypass security features.",
+        "mitigationDescription": "Remove any associations to [Application] except the ones to [SoftwareVulnerability] and [SoftwareProduct] to isolate.",
+        "badPattern": [
+            "MATCH (:Identity)-[r]->(app:Application)<-[:vulnerabilities]-(sw:SoftwareVulnerability)",
+            "WHERE TYPE(r) IN ['highPrivAppIAMs', 'executionPrivIAMs', 'writingIAMs', 'deletingIAMs']",
+            "RETURN DISTINCT app.name;",
+            "MATCH (:Identity)-[r]->(app:Application)--(:SoftwareProduct)<-[:softProductVulnerability]-(sw:SoftwareVulnerability)",
+            "WHERE TYPE(r) IN ['highPrivAppIAMs', 'executionPrivIAMs', 'writingIAMs', 'deletingIAMs']",
+            "RETURN DISTINCT app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (app:Application {name: '$1'})-[r]-()",
+            "WHERE NOT TYPE(r) IN ['vulnerabilities', 'application', 'appSoftProduct', 'softApplications]",
+            "DELETE r"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Execution": ["T1203"],
+                    "Privilege Escalation": ["T1068"],
+                    "Defense Evasion": ["T1211"],
+                    "Credential Access": ["T1212"]
+                },
+                "Mitigations": ["M1051", "M1048", "M1019"]
+            }
+    },
+    "activeNetworkScan": {
+        "badDescription": "Identifies [Network] with connected [Application] where [Network] is not identified as DMZ but with {ingoingNetConnections} association to [RoutingFirewall].",
+        "impact": "A network that allows ingoing traffic may enable active reconnaissance scans that probes infrastructure via network traffic to gather information.",
+        "mitigationDescription": "Remove {ingoingNetConnections} to the identified [Network] and add {outgoingNetConnections} instead.",
+        "badPattern": [
+            "MATCH (net:Network)<-[:ingoingNetConnections]-(cr:ConnectionRule)",
+            "WHERE NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*' AND (net)<-[*1..]-(:Application)",
+            "RETURN DISTINCT net.name, cr.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (net:Network {name: '$1'})<-[r1]-(cr:ConnectionRule {name: '$2'}), (net)-[r2]->(cr)",
+            "DELETE r1,r2",
+            "CREATE (net)<-[:outgoingNetConnections]-(cr), (net)-[:outNetworks]->(cr)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Reconnaissance": ["T1595", "T1590"],
+                    "Discovery": ["T1046"]
+                },
+                "Mitigations": ["M1056"]
+            }
+    },
+    "userExposedHardware": {
+        "badDescription": "Identifies [Hardware] with {hostHardware} association to a [Network] linked [Application] where a [User] is not matching the name of [Hardware].",
+        "impact": "Adversaries may deliver malware through removable media such as USB and use the Autorun features when inserted into hardware to gain access to the network and resources. Alternatively, adversaries may introduce hardware devices into a system or network to gain access.",
+        "mitigationDescription": "Remove the association between identified [Hardware] and [User], then add new [PhysicalZone] with {ZoneInclusion} to the [Hardware] to restrict access.",
+        "badPattern": [
+            "MATCH (usr:User)<-[:hardwareSystems]-(hw:Hardware)-[:hostHardware]->(:Application)-[*1..3]->(:Network)",
+            "WHERE NOT hw.name =~ ('(?i).*' + usr.name + '.*')",
+            "RETURN DISTINCT hw.name, usr.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (hw:Hardware {name: '$1'})-[r1:hardwareSystems]->(usr:User {name: '$2'}), (hw)<-[r2:users]-(usr)",
+            "DELETE r1,r2",
+            "CREATE (pz:PhysicalZone {metaconcept: 'PhysicalZone', name: 'RestrictedZone'}), (pz)-[:physicalZones]->(hw), (pz)<-[:hardwareSystems]-(hw)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1200", "T1091"],
+                    "Lateral Movement": ["T1091"]
+                },
+                "Mitigations": ["M1034", "M1040"]
+            }
+    },
+    "zoneExposedHardware": {
+        "badDescription": "Identifies [Hardware] where a [User] is not associated with the [PhysicalZone] linked to the [Hardware].",
+        "impact": "Adversaries may deliver malware through removable media such as USB and use the Autorun features when inserted into hardware to gain access to the network and resources. Alternatively, adversaries may introduce hardware devices into a system or network to gain access.",
+        "mitigationDescription": "Remove the association between identified [Hardware] and [User].",
+        "badPattern": [
+            "MATCH (usr:User)<-[:hardwareSystems]-(hw:Hardware)<-[:physicalZones]-(pz:PhysicalZone)",
+            "WHERE NOT (usr)<-[:physicalZones]-(pz)",
+            "RETURN DISTINCT hw.name, usr.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (hw:Hardware {name: '$1'})-[r1:hardwareSystems]->(usr:User {name: '$2'}), (hw)<-[r2:users]-(usr)",
+            "DELETE r1,r2"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1200", "T1091"],
+                    "Lateral Movement": ["T1091"]
+                },
+                "Mitigations": ["M1034", "M1040"]
+            }
+    },
+    "groupIdentityAppMismatch": {
+        "badDescription": "Identifies [Identity] with {memberOf} association to [Group] where the [Identity] has different privileges than the [Group] on [Application].",
+        "impact": "Misconfigured privileges may enable unauthorized access and permissions to applications in a network.",
+        "mitigationDescription": "Remove the association between identified [Identity] and [Application].",
+        "badPattern": [
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)-[r1]->(app:Application), (id)-[r2]->(app)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, app.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)-[:IAMOwners]->(priv:Privileges), (priv)-[r1]->(app:Application), (id)-[r2]->(app)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, app.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)<-[:parentGroup]-(:Group)-[r1]->(app:Application), (id)-[r2]->(app)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, app.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)<-[:parentGroup]-(:Group)-[:IAMOwners]->(priv:Privileges), (priv)-[r1]->(app:Application), (id)-[r2]->(app)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id:Identity {name: '$1'})-[r1]->(app:Application {name: '$2'}), (id)<-[r2]-(app)",
+            "DELTE r1,r2"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Privilege Escalation": ["T1078"],
+                    "Discovery": ["T1613", "T1046"]
+                },
+                "Mitigations": ["M1026"]
+            }
+    },
+    "groupIdentityDataMismatch": {
+        "badDescription": "Identifies [Identity] with {memberOf} association to [Group] where the [Identity] has different privileges than the [Group] on [Data].",
+        "impact": "Misconfigured privileges may enable unauthorized access and permissions to resources.",
+        "mitigationDescription": "Remove the association between identified [Identity] and [Application].",
+        "badPattern": [
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)-[r1]->(dat:Data), (id)-[r2]->(dat)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, dat.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)-[:IAMOwners]->(priv:Privileges), (priv)-[r1]->(dat:Data), (id)-[r2]->(dat)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, dat.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)<-[:parentGroup]-(:Group)-[r1]->(dat:Data), (id)-[r2]->(dat)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, dat.name;",
+            "MATCH (id:Identity)<-[:memberOf]-(:Group)<-[:parentGroup]-(:Group)-[:IAMOwners]->(priv:Privileges), (priv)-[r1]->(dat:Data), (id)-[r2]->(dat)",
+            "WHERE NOT TYPE(r1) = TYPE(r2)",
+            "RETURN DISTINCT id.name, dat.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id:Identity {name: '$1'})-[r1]->(dat:Data {name: '$2'}), (id)<-[r2]-(dat)",
+            "DELTE r1,r2"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Privilege Escalation": ["T1078"],
+                    "Discovery": ["T1613", "T1046"]
+                },
+                "Mitigations": ["M1026"]
+            }
+    },  
+    "nonSegmentedPublicApp": {
+        "badDescription": "Identifies [Application] with name matching as an internet-facing service with {ingoingAppConnections} association to [Network] that is not identified as DMZ.",
+        "impact": "Internet facing applications that are not segmented from the internal network may be exploited by attackers to gain unauthorized access to the network and resources.",
+        "mitigationDescription": "Remove the association between identified [Application] and [Network], then add it to a new segmented [Network].",
+        "badPattern": [
+            "MATCH (app:Application)<-[:ingoingAppConnections|appConnections]-(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE app.name =~ '(?i).*Public.*|.*Public Facing.*|.*PublicFacing.*|.*Web Server.*|.*WebServer.*|.*Web.*|.*HTTP.*|.*Internet.*|.*External.*' AND NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'", 
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);",
+            "MATCH (app:Application)<-[:hostApp]-(:Application)<-[:ingoingAppConnections|appConnections]-(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE app.name =~ '(?i).*Public.*|.*Public Facing.*|.*PublicFacing.*|.*Web Server.*|.*WebServer.*|.*Web.*|.*HTTP.*|.*Internet.*|.*External.*' AND NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'", 
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);",
+            "MATCH (hw:Hardware)-[:hostHardware]->(:Application)<-[:ingoingAppConnections|appConnections]-(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE hw.name =~ '(?i).*Public.*|.*Public Facing.*|.*PublicFacing.*|.*Web Server.*|.*WebServer.*|.*Web.*|.*HTTP.*|.*Internet.*|.*External.*' AND NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'", 
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);",
+            "MATCH (hw:Hardware)-[:hostHardware]->(:Application)<-[:hostApp]-(:Application)<-[:ingoingAppConnections|appConnections]-(cr:ConnectionRule)-[r1]->(net:Network)-[r3]->(cr2:ConnectionRule)--(fw:RoutingFirewall), (cr)<-[r2]-(net)<-[r4]-(cr2)",
+            "WHERE hw.name =~ '(?i).*Public.*|.*Public Facing.*|.*PublicFacing.*|.*Web Server.*|.*WebServer.*|.*Web.*|.*HTTP.*|.*Internet.*|.*External.*' AND NOT net.name =~ '(?i).*DMZ.*|.*Demilitarized Zone.*'", 
+            "RETURN DISTINCT cr.name, net.name, fw.name, type(r1), type(r2), type(r3), type(r4);"
+        ],    
+        "mitigationPattern": [
+            "MATCH (cr:ConnectionRule {name: '$1'})-[r1]->(net:Network {name: '$2'}), (cr)<-[r2]-(net), (fw:RoutingFirewall {name: '$3'})",
+            "DELETE r1,r2",
+            "CREATE (net2:Network {metaconcept: 'Network', name: 'Net segmentedNetwork'}), (cr)-[:$4]->(net2), (cr)<-[:$5]-(net2), (cr2:ConnectionRule {metaconcept: 'ConnectionRule', name: 'CR Net_segmentedNetwork->$3'}), (net2)-[:$6]->(cr2), (net2)<-[:$7]-(cr2), (cr2)-[:connectionRules]->(fw), (cr2)<-[:routingFirewalls]-(fw)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1190", "T1133"],
+                    "Lateral Movement": ["T1210"]
+                },
+                "Mitigations": ["M1030"]
+            }
+    },
+    "supplyChainVulnApp": {
+        "badDescription": "Identifies [Application] with associated [SoftwareProduct] where no {protectedApps} association to an [IDPS] exists.",
+        "impact": "Supply chain compromise may enable adversaries to exploit vulnerabilities in software to gain unauthorized access to the network and resources.",
+        "mitigationDescription": "Add [IDPS] with association {AppProtection} to the identified [Application].",
+        "badPattern": [
+            "MATCH (app:Application)<-[:appSoftProduct]-(:SoftwareProduct)",
+            "WHERE NOT (app)-[:protectedApps]->(:IDPS)",
+            "RETURN DISTINCT app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (app:Application {name: '$1'})",
+            "MERGE (idps:IDPS {metaconcept: 'IDPS', name: 'IDPS'})", 
+            "CREATE (app)-[:protectedApps]->(idps), (app)<-[:protectorIDPSs]-(idps)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Initial Access": ["T1195"]
+                },
+                "Mitigations": ["M1016", "M1051", "M1033"]
+            }
+    },
+    "dataAiTM": {
+        "badDescription": "Identifies [Data] with association {transitData} to a [Network] where [User] have access to it.",
+        "impact": "An adversary may attempt to position themselves to intercept data in transit between two network devices to intercept and collect data.",
+        "mitigationDescription": "Remove the {DataInTransit} association between identified [Data] and [Network], then transit over new [Network].",
+        "badPattern": [
+            "MATCH (net:Network)<-[:transitData]-(dat:Data), (net)-[r1]->(cr:ConnectionRule)--(:RoutingFirewall), (net)<-[r2]-(cr)", 
+            "WHERE (net)<-[*1..]-(:User)",
+            "RETURN DISTINCT net.name, dat.name, cr.name, type(r1), type(r2);"
+        ],    
+        "mitigationPattern": [
+            "MATCH (net:Network {name: '$1'})-[r1:transitNetwork]->(dat:Data {name: '$1'}), (dat)-[r2:transitData]->(net)",
+            "DELETE r1,r2",
+            "CREATE (net2:Network {metaconcept: 'Network', name: 'Net secureNetwork'}), (net2)-[:$4]->(cr:ConnectionRule {name: '$3'}), (net2)<-[:$5]-(cr), (net2)<-[:transitData]-(dat), (net2)-[:transitNetwork]->(dat) "
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Credential Access": ["T1557", "T1040"],
+                    "Collection": ["T1557"]
+                },
+                "Mitigations": ["M1041", "M1037", "M1035"]
+            }
+    },
+    "containerCompromise": {
+        "badDescription": "Identifies [Application] with name matching of containerized services where [Identity] with extended privileges exists.",
+        "impact": "Adversaries may deploy malicious containers to facilitate execution or evade defenses. Alternatively, they may try to break out of a container to gain access to the underlying host.",
+        "mitigationDescription": "Add [IDPS] to the identified [Application].",
+        "badPattern": [
+            "MATCH (:Application)-[:hostApp]->(app:Application), (:Identity)-[:highPrivAppIAMs|executionPrivIAMs]->(app)",
+            "WHERE app.name =~ '(?i).*Container.*|.*Docker.*|.*Kubernetes.*|.*Containerized.*|.*VM.*|.*Virtual.*'",
+            "RETURN DISTINCT app.name;",
+            "MATCH (app2:Application)-[:hostApp]->(app:Application), (:Identity)-[:highPrivAppIAMs|executionPrivIAMs]->(app2)",
+            "WHERE app.name =~ '(?i).*Container.*|.*Docker.*|.*Kubernetes.*|.*Containerized.*|.*VM.*|.*Virtual.*'",
+            "RETURN DISTINCT app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (app:Application {name: '$1'})",
+            "MERGE (idps:IDPS {metaconcept: 'IDPS', name: 'IDPS'})", 
+            "CREATE (app)-[:protectedApps]->(idps), (app)<-[:protectorIDPSs]-(idps)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Execution": ["T1610"],
+                    "Privilege Escalation": ["T1611"],
+                    "Discovery": ["T1613"]
+                },
+                "Mitigations": ["M1047", "M1048", "M1038"]
+            }
+    },
+    "accountManagerMFA": {
+        "badDescription": "Identifies [Identity] with {managers} association to another [Group], [Identity], or [Privileges] where association {ConditionalAuthentication} is missing.",
+        "impact": "Adversaries may modify permissions or credentials to compromised accounts to maintain or elevate access to a network and its systems.",
+        "mitigationDescription": "Add [Credentials] with {ConditionalAuthentication} to the identified [Credentials] where MFA is missing.",
+        "badPattern": [
+            "MATCH (id:Identity)-[:managers]->(:Group), (id)<-[:credentials]-(cred:Credentials)",
+            "WHERE NOT (cred)<-[:requiredFactors]-(:Credentials)",
+            "RETURN DISTINCT id.name, cred.name;",
+            "MATCH (id:Identity)-[:managers]->(:Identity), (id)<-[:credentials]-(cred:Credentials)",
+            "WHERE NOT (cred)<-[:requiredFactors]-(:Credentials)",
+            "RETURN DISTINCT id.name, cred.name;",
+            "MATCH (id:Identity)-[:managers]->(:Privileges), (id)<-[:credentials]-(cred:Credentials)",
+            "WHERE NOT (cred)<-[:requiredFactors]-(:Credentials)",
+            "RETURN DISTINCT id.name, cred.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id:Identity {name: '$1'})<-[:credentials]-(cred:Credentials {name: '$2'})",
+            "CREATE (cred2:Credentials {metaconcept: 'Credentials', name: 'MFA'}), (cred)-[:credentials]->(cred2), (cred)<-[:requiredFactors]->(cred2)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Persistence": ["T1098", "T1136"],
+                    "Impact": ["T1531"]
+                },
+                "Mitigations": ["M1032", "M1026"]
+            }
+    },
+    "userImpersonation": {
+        "badDescription": "Identifies [User] with an associated [Identity] that is linked to another [User].",
+        "impact": "Adversaries may try to impersonate a trusted person in order to persuade and trick other users conduct actions on their behalf.",
+        "mitigationDescription": "Add [Credentials] with {ConditionalAuthentication} to the identified [Credentials] where MFA is missing.",
+        "badPattern": [
+            "MATCH (usr1:User)-->(:Identity), (usr2:User)-->(:Identity)",
+            "WHERE (usr1)-[*1..]->(usr2) AND usr1 <> usr2",
+            "RETURN DISTINCT usr1.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (usr:User {name: '$1'})-->(:Identity)-->(cred:Credential)",
+            "MERGE (cred2:Credential {metaconcept: 'Credential', name: 'MFA'})", 
+            "CREATE (cred)-[:credentials]->(cred2), (cred2)-[:requiredFactors]->(cred)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Defense Evasion": ["T1656"]
+                },
+                "Mitigations": ["M1019", "M1017"]
+            }
+    },
+    "networkPerimeterCompromise": {
+        "badDescription": "Identifies [RoutingFirewall] with associated [Application] or [Hardware] where [Identity] is linked to it.",
+        "impact": "By compromising perimeter network devices adversaries may try to bridge network boundaries to bypass restrictions on traffic routing.",
+        "mitigationDescription": "Add [Credentials] with {ConditionalAuthentication} to the identified [Credentials] where MFA is missing. Then add [IDPS] to the identified [Application].",
+        "badPattern": [
+            "MATCH (:RoutingFirewall)<-[:managerApp]-(app:Application), (app)<--(id:Identity)",
+            "RETURN DISTINCT id.name, app.name;",
+            "MATCH (:RoutingFirewall)<-[:managerApp]-(:Application)<-[:hostApp]-(app:Application), (app)<--(id:Identity)",
+            "RETURN DISTINCT id.name, app.name;",
+            "MATCH (:RoutingFirewall)<-[:hostHardware]-(hw:Hardware), (hw)-[:hostHardware]->(app:Application), (hw)<--(usr:User), (usr)-->(id:Identity)",
+            "RETURN DISTINCT id.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id:Identity {name: '$1'})-->(cred:Credential), (app:Application {name: '$2'})",
+            "MERGE (cred2:Credential {metaconcept: 'Credential', name: 'MFA'}), (idps:IDPS {metaconcept: 'IDPS', name: 'IDPS'})", 
+            "CREATE (cred)-[:credentials]->(cred2), (cred2)-[:requiredFactors]->(cred), (app)-[:protectedApps]->(idps), (app)<-[:protectorIDPSs]-(idps)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Defense Evasion": ["T1599"]
+                },
+                "Mitigations": ["M1043", "M1032", "M1027"]
+            }
+    },
+    "identityDiscovery": {
+        "badDescription": "Identifies [Application] with multiple associated [Identity] with different types of privileges on the [Application].",
+        "impact": "Adversaries may attempt to enumerate valid accounts on compromised networks or systems to facilitate lateral movement and privilege escalation.",
+        "mitigationDescription": "Delete the association between identified [Identity] and [Application], then add a new anonomous [Identity] with {CanAssume} to sensitive [Identity].",
+        "badPattern": [
+            "MATCH (id1:Identity)-[r1:highPrivAppIAMs]->(app:Application),(id2:Identity)-[r2]->(app)",
+            "WHERE NOT type(r1) = type(r2)",
+            "RETURN DISTINCT id1.name, app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id:Identity {name: '$1'})-[r1]->(app:Application {name: '$2'})",
+            "DELETE r1",
+            "CREATE (id2:Identity {metaconcept: 'Identity', name: 'HiddenIdentity'}, (id2)-[:parentId]->(id), (id2)<-[:childId]-(id), (id2)-[:highPrivAppIAMs]->(app), (id2)<-[:highPrivApps]-(app)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Discovery": ["T1087"]        
+                },
+                "Mitigations": ["M1028"]
+            }
+    },
+    "taintSharedStorage": {
+        "badDescription": "Identifies [Data] that is hosted on [Hardware] or contained in [Application] where multiple [Identity] have write privileges indicating shared storage.",
+        "impact": "Shared storage locations may be abused by adversaries to deliver payloads or move laterally within a network.",
+        "mitigationDescription": "Remove the association between identified [Data] and [Identity] to restrict access.",
+        "badPattern": [
+            "MATCH (id1:Identity)-[:writingIAMs]->(dat:Data), (id2:Identity)-[:writingIAMs]->(dat)",
+            "WHERE (dat)-[:hostedData]->(:Hardware) OR (dat)-[:containedData]->(:Application) AND id1 <> id2",
+            "RETURN DISTINCT id1.name, dat.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (id1:Identity {name: '$1'})-[r1:writingIAMs]->(dat:Data {name: '$2'}), (id1)<-[r2]-(dat)",
+            "DELETE r1,r2"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Lateral Movement": ["T1080"]        
+                },
+                "Mitigations": ["M1022", "M1049"]
+            }
+    },
+    "remoteAccessC2": {
+        "badDescription": "Identifies [Application] with name matching of remote access tools where no {protectedApps} association to an [IDPS] exists.",
+        "impact": "Legitimate remote access tools may be exploited by adversaries to establish command and control channels to control compromised systems and exfiltrate data.",
+        "mitigationDescription": "Add [IDPS] to the identified [Application].",
+        "badPattern": [
+            "MATCH (app:Application)",
+            "WHERE app.name =~ '(?i).*Remote.*|.*RMM.*|.*VNC.*|.*Team Viewer.*|.*AnyDesk.*|.*ScreenConnect.*|.*LogMein.*|.*AmmyyAdmin.*' AND NOT (app)-[:protectedApps]->(:IDPS)",
+            "RETURN DISTINCT app.name;"
+        ],    
+        "mitigationPattern": [
+            "MATCH (app:Application {name: '$1'})",
+            "MERGE (idps:IDPS {metaconcept: 'IDPS', name: 'IDPS'})",
+            "CREATE (app)-[:protectedApps]->(idps), (app)<-[:protectorIDPSs]-(idps)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Command and Control": ["T1219"],
+                    "Exfiltration": ["T1041"]
+                },
+                "Mitigations": ["M1031", "M1037"]
+            }
+    },
+    "dataDestruction": {
+        "badDescription": "Identifies [Data] where [Identity] is associated with {writingIAMs} or {deletingIAMs}.",
+        "impact": "Adversaries may attempt to destroy data to disrupt operations by deleting or corrupting data.",
+        "mitigationDescription": "Add new [Data] as backup and add it to new [Hardware] for offline backup.",
+        "badPattern": [
+            "MATCH (dat:Data)",
+            "WHERE (dat)<-[:writingIAMs|deletingIAMs]-(:Identity) OR (dat)<-[:writingIAMs|deletingIAMs]-(:Group) OR (dat)<-[:writingIAMs|deletingIAMs]-(:Privileges)",
+            "RETURN DISTINCT dat.name;"
+        ],    
+        "mitigationPattern": [
+            "CREATE (dat2:Data {metaconcept: 'Data', name: 'COPY_$1'}), (hw:Hardware {metaconcept: 'Hardware', name: 'Backup_Offline'}), (dat2)-[:hostedData]->(hw), (dat2)<-[:hardware]-(hw)"
+        ],
+        "attackIDs": 
+            {
+                "Tactic": {
+                    "Impact": ["T1485", "T1486", "T1561"]
+                },
+                "Mitigations": ["M1053"]
+            }
+    }
+}
