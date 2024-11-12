@@ -1,0 +1,304 @@
+{
+    "metadata": {
+        "name": "M1",
+        "langVersion": "1.0.0",
+        "langID": "org.mal-lang.coreLang",
+        "malVersion": "0.1.0-SNAPSHOT",
+        "MAL-Toolbox Version": "0.1.4",
+        "info": "Created by the mal-toolbox model python module."
+    },
+    "assets": {
+        "0": {
+            "name": "Hw Computer_1_Employee_1",
+            "type": "Hardware"
+        },
+        "1": {
+            "name": "Hw Server_1",
+            "type": "Hardware"
+        },
+        "2": {
+            "name": "App 1.0_OS_Windows",
+            "type": "Application"
+        },
+        "3": {
+            "name": "App 2.0_Server_Windows",
+            "type": "Application"
+        },
+        "4": {
+            "name": "App 2.1_RemoteAccess_TeamViewer",
+            "type": "Application"
+        },
+        "5": {
+            "name": "Data Secret",
+            "type": "Data"
+        },
+        "6": {
+            "name": "Router FW_1",
+            "type": "RoutingFirewall"
+        },
+        "7": {
+            "name": "Net LAN_1",
+            "type": "Network"
+        },
+        "8": {
+            "name": "CR Net_LAN_1->Router_FW_1",
+            "type": "ConnectionRule"
+        },
+        "9": {
+            "name": "CR Net_LAN_1<->App_1.0",
+            "type": "ConnectionRule"
+        },
+        "10": {
+            "name": "CR Net_LAN_1<->App_2.0",
+            "type": "ConnectionRule"
+        },
+        "11": {
+            "name": "Id Admin_1",
+            "type": "Identity"
+        },
+        "12": {
+            "name": "Id Employee_1",
+            "type": "Identity"
+        },
+        "13": {
+            "name": "Id ServiceAccount_1",
+            "type": "Identity"
+        },
+        "14": {
+            "name": "Group Employees",
+            "type": "Group"
+        },
+        "15": {
+            "name": "Cred Admin_1",
+            "type": "Credentials"
+        },
+        "16": {
+            "name": "Cred Employee_1",
+            "type": "Credentials"
+        },
+        "17": {
+            "name": "User Admin_1",
+            "type": "User"
+        },
+        "18": {
+            "name": "User Employee_1",
+            "type": "User"
+        }
+    },
+    "associations": [
+        {
+            "SysExecution": {
+                "hostHardware": [
+                    0
+                ],
+                "sysExecutedApps": [
+                    2
+                ]
+            }
+        },
+        {
+            "SysExecution": {
+                "hostHardware": [
+                    1
+                ],
+                "sysExecutedApps": [
+                    3
+                ]
+            }
+        },
+        {
+            "AppExecution": {
+                "hostApp": [
+                    3
+                ],
+                "appExecutedApps": [
+                    4
+                ]
+            }
+        },
+        {
+            "AppContainment": {
+                "containedData": [
+                    5
+                ],
+                "containingApp": [
+                    2
+                ]
+            }
+        },
+        {
+            "ApplicationConnection": {
+                "applications": [
+                    2
+                ],
+                "appConnections": [
+                    9
+                ]
+            }
+        },
+        {
+            "ApplicationConnection": {
+                "applications": [
+                    3
+                ],
+                "appConnections": [
+                    10
+                ]
+            }
+        },
+        {
+            "OutNetworkConnection": {
+                "outNetworks": [
+                    7
+                ],
+                "outgoingNetConnections": [
+                    8
+                ]
+            }
+        },
+        {
+            "NetworkConnection": {
+                "networks": [
+                    7
+                ],
+                "netConnections": [
+                    9,
+                    10
+                ]
+            }
+        },
+        {
+            "FirewallConnectionRule": {
+                "routingFirewalls": [
+                    6
+                ],
+                "connectionRules": [
+                    8
+                ]
+            }
+        },
+        {
+            "IdentityCredentials": {
+                "identities": [
+                    11
+                ],
+                "credentials": [
+                    15
+                ]
+            }
+        },
+        {
+            "IdentityCredentials": {
+                "identities": [
+                    12
+                ],
+                "credentials": [
+                    16
+                ]
+            }
+        },
+        {
+            "LowPrivilegeApplicationAccess": {
+                "lowPrivAppIAMs": [
+                    14
+                ],
+                "lowPrivApps": [
+                    2
+                ]
+            }
+        },
+        {
+            "HighPrivilegeApplicationAccess": {
+                "highPrivAppIAMs": [
+                    11
+                ],
+                "highPrivApps": [
+                    2,
+                    3
+                ]
+            }
+        },
+        {
+            "ExecutionPrivilegeAccess": {
+                "executionPrivIAMs": [
+                    12
+                ],
+                "execPrivApps": [
+                    4,
+                    2
+                ]
+            }
+        },
+        {
+            "MemberOf_Group_Identity": {
+                "memberOf": [
+                    14
+                ],
+                "groupIds": [
+                    12
+                ]
+            }
+        },
+        {
+            "HighPrivilegeApplicationAccess": {
+                "highPrivAppIAMs": [
+                    13
+                ],
+                "highPrivApps": [
+                    3
+                ]
+            }
+        },
+        {
+            "ReadPrivileges": {
+                "readingIAMs": [
+                    14
+                ],
+                "readPrivData": [
+                    5
+                ]
+            }
+        },
+        {
+            "WritePrivileges": {
+                "writingIAMs": [
+                    12
+                ],
+                "writePrivData": [
+                    5
+                ]
+            }
+        },
+        {
+            "AccountManagement": {
+                "managers": [
+                    11
+                ],
+                "managedIAMs": [
+                    13
+                ]
+            }
+        },
+        {
+            "UserAssignedIdentities": {
+                "users": [
+                    17
+                ],
+                "userIds": [
+                    11
+                ]
+            }
+        },
+        {
+            "UserAssignedIdentities": {
+                "users": [
+                    18
+                ],
+                "userIds": [
+                    12
+                ]
+            }
+        }
+    ],
+    "attackers": {}
+}

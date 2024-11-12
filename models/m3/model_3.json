@@ -1,0 +1,314 @@
+{
+  "metadata": {
+    "name": "M3",
+    "langVersion": "1.0.0",
+    "langID": "org.mal-lang.coreLang",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "info": "Created by the mal-toolbox model python module."
+  },
+  "assets": {
+    "0": {
+      "name": "Hw Computer_1_Employee_1",
+      "metaconcept": "Hardware",
+      "eid": "0",
+      "defenses": {}
+    },
+    "1": {
+      "name": "Hw Server_1",
+      "metaconcept": "Hardware",
+      "eid": "1",
+      "defenses": {}
+    },
+    "2": {
+      "name": "App 1.0_OS_Windows",
+      "metaconcept": "Application",
+      "eid": "2",
+      "defenses": {}
+    },
+    "3": {
+      "name": "App 2.0_Server_Windows",
+      "metaconcept": "Application",
+      "eid": "3",
+      "defenses": {}
+    },
+    "4": {
+      "name": "App 2.1_Server_HTTP",
+      "metaconcept": "Application",
+      "eid": "4",
+      "defenses": {}
+    },
+    "5": {
+      "name": "App 2.2_Docker",
+      "metaconcept": "Application",
+      "eid": "5",
+      "defenses": {}
+    },
+    "6": {
+      "name": "App 2.3_FirewallConfig",
+      "metaconcept": "Application",
+      "eid": "6",
+      "defenses": {}
+    },
+    "7": {
+      "name": "Zone 1",
+      "metaconcept": "PhysicalZone",
+      "eid": "7",
+      "defenses": {}
+    },
+    "8": {
+      "name": "Zone 2",
+      "metaconcept": "PhysicalZone",
+      "eid": "8",
+      "defenses": {}
+    },
+    "9": {
+      "name": "Router FW_1",
+      "metaconcept": "RoutingFirewall",
+      "eid": "9",
+      "defenses": {}
+    },
+    "10": {
+      "name": "Net LAN_1",
+      "metaconcept": "Network",
+      "eid": "10",
+      "defenses": {}
+    },
+    "11": {
+      "name": "CR Net_LAN_1->Router_FW_1",
+      "metaconcept": "ConnectionRule",
+      "eid": "11",
+      "defenses": {}
+    },
+    "12": {
+      "name": "CR Net_LAN_1<->App_1.0",
+      "metaconcept": "ConnectionRule",
+      "eid": "12",
+      "defenses": {}
+    },
+    "13": {
+      "name": "CR Net_LAN_1<->App_2.0",
+      "metaconcept": "ConnectionRule",
+      "eid": "13",
+      "defenses": {}
+    },
+    "14": {
+      "name": "Id Admin_1",
+      "metaconcept": "Identity",
+      "eid": "14",
+      "defenses": {}
+    },
+    "15": {
+      "name": "Id Employee_1",
+      "metaconcept": "Identity",
+      "eid": "15",
+      "defenses": {}
+    },
+    "16": {
+      "name": "User Admin_1",
+      "metaconcept": "User",
+      "eid": "16",
+      "defenses": {}
+    },
+    "17": {
+      "name": "User Employee_1",
+      "metaconcept": "User",
+      "eid": "17",
+      "defenses": {}
+    }
+  },
+  "associations": [
+    {
+      "metaconcept": "SysExecution",
+      "association": {
+        "hostHardware": [
+          "0"
+        ],
+        "sysExecutedApps": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "SysExecution",
+      "association": {
+        "hostHardware": [
+          "1"
+        ],
+        "sysExecutedApps": [
+          "3"
+        ]
+      }
+    },
+    {
+      "metaconcept": "AppExecution",
+      "association": {
+        "hostApp": [
+          "3"
+        ],
+        "appExecutedApps": [
+          "4",
+          "5",
+          "6"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ZoneInclusion_PhysicalZone_Hardware",
+      "association": {
+        "physicalZones": [
+          "7"
+        ],
+        "hardwareSystems": [
+          "0"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ZoneInclusion_PhysicalZone_Hardware",
+      "association": {
+        "physicalZones": [
+          "8"
+        ],
+        "hardwareSystems": [
+          "1"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationConnection",
+      "association": {
+        "applications": [
+          "2"
+        ],
+        "appConnections": [
+          "12"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationConnection",
+      "association": {
+        "applications": [
+          "3"
+        ],
+        "appConnections": [
+          "13"
+        ]
+      }
+    },
+    {
+      "metaconcept": "InNetworkConnection",
+      "association": {
+        "inNetworks": [
+          "10"
+        ],
+        "ingoingNetConnections": [
+          "11"
+        ]
+      }
+    },
+    {
+      "metaconcept": "NetworkConnection",
+      "association": {
+        "networks": [
+          "10"
+        ],
+        "netConnections": [
+          "12",
+          "13"
+        ]
+      }
+    },
+    {
+      "metaconcept": "FirewallConnectionRule",
+      "association": {
+        "routingFirewalls": [
+          "9"
+        ],
+        "connectionRules": [
+          "11"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ManagedBy",
+      "association": {
+        "managedRoutingFw": [
+          "9"
+        ],
+        "managerApp": [
+          "6"
+        ]
+      }
+    },
+    {
+      "metaconcept": "HighPrivilegeApplicationAccess",
+      "association": {
+        "highPrivAppIAMs": [
+          "14"
+        ],
+        "highPrivApps": [
+          "2",
+          "3"
+        ]
+      }
+    },
+    {
+      "metaconcept": "LowPrivilegeApplicationAccess",
+      "association": {
+        "lowPrivAppIAMs": [
+          "15"
+        ],
+        "lowPrivApps": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "UserAssignedIdentities",
+      "association": {
+        "users": [
+          "16"
+        ],
+        "userIds": [
+          "14"
+        ]
+      }
+    },
+    {
+      "metaconcept": "UserAssignedIdentities",
+      "association": {
+        "users": [
+          "17"
+        ],
+        "userIds": [
+          "15"
+        ]
+      }
+    },
+    {
+      "metaconcept": "HardwareAccess",
+      "association": {
+        "users": [
+          "16"
+        ],
+        "hardwareSystems": [
+          "0",
+          "1"
+        ]
+      }
+    },
+    {
+      "metaconcept": "HardwareAccess",
+      "association": {
+        "users": [
+          "17"
+        ],
+        "hardwareSystems": [
+          "0"
+        ]
+      }
+    }
+  ],
+  "attackers": {}
+}

@@ -1,0 +1,316 @@
+{
+  "metadata": {
+    "name": "M2",
+    "langVersion": "1.0.0",
+    "langID": "org.mal-lang.coreLang",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "info": "Created by the mal-toolbox model python module."
+  },
+  "assets": {
+    "0": {
+      "name": "Hw Computer_1_Employee_1",
+      "metaconcept": "Hardware",
+      "eid": "0",
+      "defenses": {}
+    },
+    "1": {
+      "name": "Hw Server_1",
+      "metaconcept": "Hardware",
+      "eid": "1",
+      "defenses": {}
+    },
+    "2": {
+      "name": "App 1.0_OS_Windows",
+      "metaconcept": "Application",
+      "eid": "2",
+      "defenses": {}
+    },
+    "3": {
+      "name": "App 2.0_Server_Windows",
+      "metaconcept": "Application",
+      "eid": "3",
+      "defenses": {}
+    },
+    "4": {
+      "name": "SWProd 1.0_OS_Windows",
+      "metaconcept": "SoftwareProduct",
+      "eid": "4",
+      "defenses": {}
+    },
+    "5": {
+      "name": "Data Secret",
+      "metaconcept": "Data",
+      "eid": "5",
+      "defenses": {}
+    },
+    "6": {
+      "name": "Info Secret",
+      "metaconcept": "Information",
+      "eid": "6",
+      "defenses": {}
+    },
+    "7": {
+      "name": "Router FW_1",
+      "metaconcept": "RoutingFirewall",
+      "eid": "7",
+      "defenses": {}
+    },
+    "8": {
+      "name": "Net LAN_1",
+      "metaconcept": "Network",
+      "eid": "8",
+      "defenses": {}
+    },
+    "9": {
+      "name": "CR Net_LAN_1->Router_FW_1",
+      "metaconcept": "ConnectionRule",
+      "eid": "9",
+      "defenses": {}
+    },
+    "10": {
+      "name": "CR Net_LAN_1<->App_1.0",
+      "metaconcept": "ConnectionRule",
+      "eid": "10",
+      "defenses": {}
+    },
+    "11": {
+      "name": "CR Net_LAN_1<->App_2.0",
+      "metaconcept": "ConnectionRule",
+      "eid": "11",
+      "defenses": {}
+    },
+    "12": {
+      "name": "Id Admin_1",
+      "metaconcept": "Identity",
+      "eid": "12",
+      "defenses": {}
+    },
+    "13": {
+      "name": "Id Employee_1",
+      "metaconcept": "Identity",
+      "eid": "13",
+      "defenses": {}
+    },
+    "14": {
+      "name": "User Admin_1",
+      "metaconcept": "User",
+      "eid": "14",
+      "defenses": {}
+    },
+    "15": {
+      "name": "User Employee_1",
+      "metaconcept": "User",
+      "eid": "15",
+      "defenses": {}
+    },
+    "16": {
+      "name": "Vuln SW_1",
+      "metaconcept": "SoftwareVulnerability",
+      "eid": "16",
+      "defenses": {}
+    }
+  },
+  "associations": [
+    {
+      "metaconcept": "SysExecution",
+      "association": {
+        "hostHardware": [
+          "0"
+        ],
+        "sysExecutedApps": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "SysExecution",
+      "association": {
+        "hostHardware": [
+          "1"
+        ],
+        "sysExecutedApps": [
+          "3"
+        ]
+      }
+    },
+    {
+      "metaconcept": "AppSoftwareProduct",
+      "association": {
+        "appSoftProduct": [
+          "4"
+        ],
+        "softApplications": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "AppContainment",
+      "association": {
+        "containedData": [
+          "5"
+        ],
+        "containingApp": [
+          "3"
+        ]
+      }
+    },
+    {
+      "metaconcept": "InfoContainment",
+      "association": {
+        "containerData": [
+          "5"
+        ],
+        "information": [
+          "6"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationConnection",
+      "association": {
+        "applications": [
+          "2"
+        ],
+        "appConnections": [
+          "10"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationConnection",
+      "association": {
+        "applications": [
+          "3"
+        ],
+        "appConnections": [
+          "11"
+        ]
+      }
+    },
+    {
+      "metaconcept": "InNetworkConnection",
+      "association": {
+        "inNetworks": [
+          "8"
+        ],
+        "ingoingNetConnections": [
+          "9"
+        ]
+      }
+    },
+    {
+      "metaconcept": "NetworkConnection",
+      "association": {
+        "networks": [
+          "8"
+        ],
+        "netConnections": [
+          "10",
+          "11"
+        ]
+      }
+    },
+    {
+      "metaconcept": "DataInTransit",
+      "association": {
+        "transitData": [
+          "5"
+        ],
+        "transitNetwork": [
+          "8"
+        ]
+      }
+    },
+    {
+      "metaconcept": "FirewallConnectionRule",
+      "association": {
+        "routingFirewalls": [
+          "7"
+        ],
+        "connectionRules": [
+          "9"
+        ]
+      }
+    },
+    {
+      "metaconcept": "HighPrivilegeApplicationAccess",
+      "association": {
+        "highPrivAppIAMs": [
+          "12"
+        ],
+        "highPrivApps": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "LowPrivilegeApplicationAccess",
+      "association": {
+        "lowPrivAppIAMs": [
+          "13"
+        ],
+        "lowPrivApps": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "WritePrivileges",
+      "association": {
+        "writingIAMs": [
+          "12",
+          "13"
+        ],
+        "writePrivData": [
+          "5"
+        ]
+      }
+    },
+    {
+      "metaconcept": "UserAssignedIdentities",
+      "association": {
+        "users": [
+          "14"
+        ],
+        "userIds": [
+          "12"
+        ]
+      }
+    },
+    {
+      "metaconcept": "UserAssignedIdentities",
+      "association": {
+        "users": [
+          "15"
+        ],
+        "userIds": [
+          "13"
+        ]
+      }
+    },
+    {
+      "metaconcept": "HardwareAccess",
+      "association": {
+        "users": [
+          "15"
+        ],
+        "hardwareSystems": [
+          "0"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationVulnerability_SoftwareVulnerability_Application",
+      "association": {
+        "vulnerabilities": [
+          "16"
+        ],
+        "application": [
+          "2"
+        ]
+      }
+    }
+  ],
+  "attackers": {}
+}
