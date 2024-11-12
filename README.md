@@ -16,15 +16,14 @@ The pattern collection consists of 25 different patterns capable of identifying 
 ## Usage
 1. Compile coreLang model using the MAL-Toolbox or use the example models provided in the /models directory
 2. python3 mpe.py -m models/mX/model_X.json -p patterns.json
-
-![CLI usage](mpeUsage.png)
-
-3. ### CLI instructions:
+3. CLI instructions:
    [1] *Analyze patterns* - Process each pattern from the pattern.json file and send the queries to the Neo4j graph database  
    [2] *Review Pattern Report* - Print the generated log report from the analyzed patterns  
    [3] *Apply mitigation* - From the pattern report select the ID of the pattern that should be mitigated and provide it as argument  
    [4] *Restore model* - Undo any changes to the provided model and restore it to its original state  
-   [5] *Exit* - Terminates the program  
+   [5] *Exit* - Terminates the program 
+
+![CLI usage](mpeUsage.png)
 
 
 ## Pattern collection
